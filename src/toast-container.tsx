@@ -41,45 +41,31 @@ class ToastContainer extends Component<Props, State> {
    * Shows a new toast. Returns id
    */
   show = (message: string | JSX.Element, toastOptions?: ToastOptions) => {
-  let id = toastOptions?.id || Math.random().toString();
+    let id = toastOptions?.id || Math.random().toString();
+    const onDestroy = () => {
+      toastOptions?.onClose && toastOptions?.onClose();
+      this.setState({ toasts: this.state.toasts.filter((t) => t.id !== id) });
+    };
 
-  // 1) Check if this toast already exists:
-  if (this.state.toasts.some((t) => t.id === id)) {
-    // If it already exists, do nothing (or optionally update the existing toast)
+    requestAnimationFrame(() => {
+      this.setState({
+        toasts: [
+          {
+            id,
+            onDestroy,
+            message,
+            open: true,
+            onHide: () => this.hide(id),
+            ...this.props,
+            ...toastOptions,
+          },
+          ...this.state.toasts.filter((t) => t.open),
+        ],
+      });
+    });
+
     return id;
-  }
-
-  // 2) Define onDestroy
-  const onDestroy = () => {
-    toastOptions?.onClose && toastOptions?.onClose();
-    this.setState({
-      toasts: this.state.toasts.filter((t) => t.id !== id),
-    });
   };
-
-  // 3) Actually add the toast
-  requestAnimationFrame(() => {
-    this.setState({
-      toasts: [
-        {
-          id,
-          onDestroy,
-          message,
-          open: true,
-          onHide: () => this.hide(id),
-          // Merged props
-          ...this.props,
-          ...toastOptions,
-        },
-        // Keep existing toasts
-        ...this.state.toasts.filter((t) => t.open),
-      ],
-    });
-  });
-
-  return id;
-};
-
   /**
    * Updates a toast, To use this create you must pass an id to show method first, then pass it here to update the toast.
    */
